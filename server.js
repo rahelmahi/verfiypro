@@ -344,6 +344,20 @@ app.delete('/api/admin/verifications/:id', requireAdmin, async (req, res) => {
     }
 });
 
+// Serve admin pages
+app.get('/admin/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
+});
+
+// Serve index page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', mongoConnected: mongoConnected });
