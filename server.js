@@ -7,7 +7,7 @@ const path = require('path');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo').default;
 require('dotenv').config();
 
 // Configure Cloudinary
@@ -70,21 +70,27 @@ const ADMIN_EMAIL = 'ttsuk21418@gmail.com';
 const ADMIN_PASSWORD = '#email123';
 
 // Session configuration
-app.use(session({
+const sessionConfig = {
     secret: 'verifypro-admin-secret-key',
     resave: false,
     saveUninitialized: false,
-    store: new MongoStore({
-        mongoUrl: process.env.MONGODB_URI,
-        touchAfter: 24 * 3600
-    }),
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000
     }
-}));
+};
+
+// Add MongoDB store if connection string is available
+if (process.env.MONGODB_URI) {
+    sessionConfig.store = new MongoStore({
+        mongoUrl: process.env.MONGODB_URI,
+        touchAfter: 24 * 3600
+    });
+}
+
+app.use(session(sessionConfig));
 
 // Middleware
 app.use(cors({
