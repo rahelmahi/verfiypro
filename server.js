@@ -7,6 +7,7 @@ const path = require('path');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 require('dotenv').config();
 
 // Configure Cloudinary
@@ -72,15 +73,28 @@ const ADMIN_PASSWORD = '#email123';
 app.use(session({
     secret: 'verifypro-admin-secret-key',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
+    store: new MongoStore({
+        mongoUrl: process.env.MONGODB_URI,
+        touchAfter: 24 * 3600
+    }),
     cookie: { 
-        secure: false,
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:3000',
+        'http://localhost:5000',
+        'https://verfiypro.vercel.app'
+    ],
+    credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
