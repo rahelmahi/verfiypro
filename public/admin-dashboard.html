@@ -375,13 +375,13 @@
                     <td class="px-6 py-4 text-gray-700">${v.whatsappNumber}</td>
                     <td class="px-6 py-4">
                         <div class="flex gap-2">
-                            ${v.files?.dlFront ? `<img src="/uploads/${v.files.dlFront}" alt="DL Front" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('/uploads/${v.files.dlFront}')">` : ''}
-                            ${v.files?.dlBack ? `<img src="/uploads/${v.files.dlBack}" alt="DL Back" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('/uploads/${v.files.dlBack}')">` : ''}
-                            ${v.files?.utilityBill ? `<img src="/uploads/${v.files.utilityBill}" alt="Utility Bill" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('/uploads/${v.files.utilityBill}')">` : ''}
+                            ${v.files?.dlFront ? `<img src="${v.files.dlFront}" alt="DL Front" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('${v.files.dlFront}')">` : ''}
+                            ${v.files?.dlBack ? `<img src="${v.files.dlBack}" alt="DL Back" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('${v.files.dlBack}')">` : ''}
+                            ${v.files?.utilityBill ? `<img src="${v.files.utilityBill}" alt="Utility Bill" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('${v.files.utilityBill}')">` : ''}
                         </div>
                     </td>
                     <td class="px-6 py-4">
-                        <span class="status-badge status-${v.status}">
+                        <span class="status-badge status-${v.status.replace('_', '-')}">
                             ${v.status === 'pending_review' ? '⏳ Pending' : v.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
                         </span>
                     </td>
@@ -400,9 +400,8 @@
         async function openDetailModal(id) {
             currentDetailId = id;
             try {
-                const response = await fetch(`/api/admin/verifications/${id}`);
-                const data = await response.json();
-                const v = data.data;
+                const response = await fetch(`/api/verification/${id}`);
+                const v = await response.json();
 
                 document.getElementById('detailOrderNumber').textContent = v.orderNumber;
                 document.getElementById('detailFullName').textContent = v.fullName;
@@ -411,11 +410,11 @@
                 document.getElementById('detailAddress').textContent = v.fullAddress;
                 document.getElementById('detailWhatsapp').textContent = v.whatsappNumber;
                 document.getElementById('detailSubmittedAt').textContent = new Date(v.submittedAt).toLocaleString();
-                document.getElementById('detailStatus').textContent = v.status === 'pending_review' ? '⏳ Pending' : v.status === 'approved' ? '✅ Approved' : '❌ Rejected';
+                document.getElementById('detailStatus').textContent = v.status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 
-                if (v.files?.dlFront) document.getElementById('detailDLFront').src = `/uploads/${v.files.dlFront}`;
-                if (v.files?.dlBack) document.getElementById('detailDLBack').src = `/uploads/${v.files.dlBack}`;
-                if (v.files?.utilityBill) document.getElementById('detailUtilityBill').src = `/uploads/${v.files.utilityBill}`;
+                if (v.files?.dlFront) document.getElementById('detailDLFront').src = v.files.dlFront;
+                if (v.files?.dlBack) document.getElementById('detailDLBack').src = v.files.dlBack;
+                if (v.files?.utilityBill) document.getElementById('detailUtilityBill').src = v.files.utilityBill;
 
                 document.getElementById('detailModal').classList.add('show');
             } catch (error) {
