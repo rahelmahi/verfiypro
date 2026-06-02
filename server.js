@@ -293,19 +293,20 @@ app.post('/api/verify', upload.fields([
             { filename: 'Utility-Bill.jpg', path: req.files.utilityBill[0].path }
         ];
 
-        try {
-            await transporter.sendMail({
-                from: process.env.EMAIL_FROM,
-                to: process.env.EMAIL_TO,
-                subject: `[VERIFICATION] Order #${formData.orderNumber}`,
-                html: emailHtml,
-                attachments: attachments
-            });
+        // Send email in background (don't wait for it)
+        transporter.sendMail({
+            from: process.env.EMAIL_FROM,
+            to: process.env.EMAIL_TO,
+            subject: `[VERIFICATION] Order #${formData.orderNumber}`,
+            html: emailHtml,
+            attachments: attachments
+        }).then(() => {
             console.log(`✅ Email sent for Order #${formData.orderNumber}`);
-        } catch (err) {
+        }).catch((err) => {
             console.warn(`⚠️ Email sending failed: ${err.message}`);
-        }
+        });
 
+        // Respond immediately - user gets instant feedback
         res.json({
             success: true,
             message: 'Verification submitted successfully',
