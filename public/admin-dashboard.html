@@ -196,7 +196,7 @@
                             <p id="detailDOB" class="text-lg font-semibold text-gray-800 mt-1">-</p>
                         </div>
                         <div>
-                            <label class="text-sm font-semibold text-gray-600">SSN (Last 4)</label>
+                            <label class="text-sm font-semibold text-gray-600">SSN</label>
                             <p id="detailSSN" class="text-lg font-semibold text-gray-800 mt-1">-</p>
                         </div>
                     </div>
@@ -248,6 +248,9 @@
                         </button>
                         <button onclick="updateStatus('rejected')" class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition">
                             ❌ Reject
+                        </button>
+                        <button onclick="downloadOrderDetails()" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition">
+                            📥 Download Details
                         </button>
                         <button onclick="deleteRecord()" class="px-6 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-semibold transition">
                             🗑️ Delete Record
@@ -518,6 +521,43 @@
                 console.error('Error deleting record:', error);
                 document.getElementById('statusMessage').textContent = '❌ Error deleting record';
                 document.getElementById('statusMessage').classList.remove('hidden');
+                document.getElementById('statusMessage').classList.add('bg-red-100', 'text-red-700');
+            }
+        }
+
+        async function downloadOrderDetails() {
+            if (!currentDetailId) return;
+            
+            try {
+                const response = await fetch(`/api/admin/download/${currentDetailId}`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to download');
+                }
+
+                // Get the filename from content-disposition header
+                const filename = response.headers.get('content-disposition')?.split('filename="')[1]?.replace('"', '') || 'order-details.txt';
+                
+                // Create blob and download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                document.getElementById('statusMessage').textContent = '✅ Details downloaded successfully!';
+                document.getElementById('statusMessage').classList.remove('hidden', 'bg-red-100', 'text-red-700');
+                document.getElementById('statusMessage').classList.add('bg-green-100', 'text-green-700');
+            } catch (error) {
+                console.error('Error downloading details:', error);
+                document.getElementById('statusMessage').textContent = '❌ Failed to download details';
+                document.getElementById('statusMessage').classList.remove('hidden', 'bg-green-100', 'text-green-700');
                 document.getElementById('statusMessage').classList.add('bg-red-100', 'text-red-700');
             }
         }

