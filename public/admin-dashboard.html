@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - VerifyPro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f0f9ff;
+        }
+        .table-row:hover {
+            background-color: #e0f2fe;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-in;
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .image-thumbnail {
+            max-height: 120px;
+            cursor: pointer;
+            border-radius: 0.5rem;
+            transition: transform 0.2s;
+        }
+        .image-thumbnail:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-cyan-500 shadow-lg">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-white">VerifyPro Admin</h1>
+                <p class="text-blue-100 text-sm">Verification Management System</p>
+            </div>
+            <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-semibold transition">
+                🚪 Logout
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+        <!-- Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-gray-600 text-sm font-semibold mb-2">Total Submissions</h3>
+                <p class="text-4xl font-bold text-gray-800" id="totalCount">0</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-gray-600 text-sm font-semibold mb-2">Pending Review</h3>
+                <p class="text-4xl font-bold text-yellow-600" id="pendingCount">0</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-gray-600 text-sm font-semibold mb-2">Approved</h3>
+                <p class="text-4xl font-bold text-green-600" id="approvedCount">0</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-gray-600 text-sm font-semibold mb-2">Rejected</h3>
+                <p class="text-4xl font-bold text-red-600" id="rejectedCount">0</p>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">Filters & Search</h2>
+                </div>
+                <div class="w-full md:w-64">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="🔍 Search by name, email, or order #" 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    >
+                </div>
+            </div>
+            <div class="flex gap-4 flex-wrap">
+                <button class="filter-btn px-4 py-2 rounded-lg font-semibold transition bg-blue-600 text-white" data-filter="all">
+                    All
+                </button>
+                <button class="filter-btn px-4 py-2 rounded-lg font-semibold transition bg-gray-200 text-gray-700 hover:bg-yellow-200" data-filter="pending_review">
+                    ⏳ Pending
+                </button>
+                <button class="filter-btn px-4 py-2 rounded-lg font-semibold transition bg-gray-200 text-gray-700 hover:bg-green-200" data-filter="approved">
+                    ✅ Approved
+                </button>
+                <button class="filter-btn px-4 py-2 rounded-lg font-semibold transition bg-gray-200 text-gray-700 hover:bg-red-200" data-filter="rejected">
+                    ❌ Rejected
+                </button>
+            </div>
+        </div>
+
+        <!-- Verifications Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-800">User Submissions</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Order #</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Full Name</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Email/Phone</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Documents</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                            <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr class="text-center py-8">blue-600 to-cyan
+                            <td colspan="7" class="text-gray-500">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content bg-white rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-500 text-white p-6 flex justify-between items-center border-b">
+                <h2 class="text-2xl font-bold">Verification Details</h2>
+                <button onclick="closeDetailModal()" class="text-2xl font-bold cursor-pointer hover:opacity-80">✕</button>
+            </div>
+
+            <div class="p-8">
+                <!-- Personal Info -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-purple-500">📋 Personal Information</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-600">Order Number</label>
+                            <p id="detailOrderNumber" class="text-lg font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold text-gray-600">Full Name</label>
+                            <p id="detailFullName" class="text-lg font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold text-gray-600">Date of Birth</label>
+                            <p id="detailDOB" class="text-lg font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold text-gray-600">SSN (Last 4)</label>
+                            <p id="detailSSN" class="text-lg font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address & Contact -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-purple-500">📍 Address & Contact</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-600">Full Address</label>
+                            <p id="detailAddress" class="text-gray-800 mt-1 whitespace-pre-wrap">-</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold text-gray-600">WhatsApp Number</label>
+                            <p id="detailWhatsapp" class="text-lg font-semibold text-gray-800 mt-1">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-purple-500">📎 Uploaded Documents</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="text-center">
+                            <label class="text-sm font-semibold text-gray-600">Driver License - Front</label>
+                            <img id="detailDLFront" src="#" alt="DL Front" class="image-thumbnail mt-3 w-full object-cover cursor-pointer" onclick="openImageModal(this.src)">
+                        </div>
+                        <div class="text-center">
+                            <label class="text-sm font-semibold text-gray-600">Driver License - Back</label>
+                            <img id="detailDLBack" src="#" alt="DL Back" class="image-thumbnail mt-3 w-full object-cover cursor-pointer" onclick="openImageModal(this.src)">
+                        </div>
+                        <div class="text-center">
+                            <label class="text-sm font-semibold text-gray-600">Utility Bill</label>
+                            <img id="detailUtilityBill" src="#" alt="Utility Bill" class="image-thumbnail mt-3 w-full object-cover cursor-pointer" onclick="openImageModal(this.src)">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Update -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 pb-2 border-b-2 border-blue-500">⏰ Status Management</h3>
+                    <div class="flex gap-3 flex-wrap">
+                        <button onclick="updateStatus('pending_review')" class="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold transition">
+                            ⏳ Pending
+                        </button>
+                        <button onclick="updateStatus('approved')" class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition">
+                            ✅ Approve
+                        </button>
+                        <button onclick="updateStatus('rejected')" class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition">
+                            ❌ Reject
+                        </button>
+                        <button onclick="deleteRecord()" class="px-6 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-semibold transition">
+                            🗑️ Delete Record
+                        </button>
+                    </div>
+                    <div id="statusMessage" class="mt-4 p-4 rounded-lg hidden"></div>
+                </div>
+
+                <!-- Submission Info -->
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Submitted At:</span>
+                        <span id="detailSubmittedAt" class="font-semibold text-gray-800">-</span>
+                    </div>
+                    <div class="flex justify-between text-sm mt-2">
+                        <span class="text-gray-600">Current Status:</span>
+                        <span id="detailStatus" class="font-semibold">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal" onclick="closeImageModal(event)">
+        <div class="modal-content">
+            <img id="fullImage" src="#" alt="Full Size Image" class="max-w-full max-h-[90vh]">
+        </div>
+    </div>
+
+    <script>
+        let allVerifications = [];
+        let currentFilter = 'all';
+        let currentDetailId = null;
+        let filteredVerifications = [];
+
+        // Load verifications on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVerifications();
+            setupFilterButtons();
+            setupSearchInput();
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await fetch('/api/admin/logout');
+            window.location.href = '/admin/login';
+        });
+
+        // Setup search input
+        function setupSearchInput() {
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                renderTable(searchTerm);
+            });
+        }
+
+        async function loadVerifications() {
+            try {
+                const response = await fetch('/api/admin/verifications');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allVerifications = data.data;
+                    filteredVerifications = allVerifications;
+                    updateStats();
+                    renderTable();
+                }
+            } catch (error) {
+                console.error('Error loading verifications:', error);
+            }
+        }
+
+        function updateStats() {
+            const total = allVerifications.length;
+            const pending = allVerifications.filter(v => v.status === 'pending_review').length;
+            const approved = allVerifications.filter(v => v.status === 'approved').length;
+            const rejected = allVerifications.filter(v => v.status === 'rejected').length;
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('approvedCount').textContent = approved;
+            document.getElementById('rejectedCount').textContent = rejected;
+        }
+
+        function setupFilterButtons() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('bg-blue-600', 'text-white');
+                        b.classList.add('bg-gray-200', 'text-gray-700');
+                    });
+                    btn.classList.remove('bg-gray-200', 'text-gray-700');
+                    btn.classList.add('bg-blue-600', 'text-white');
+                    currentFilter = btn.dataset.filter;
+                    renderTable();
+                });
+            });
+        }
+
+        function renderTable(searchTerm = '') {
+            let filtered = currentFilter === 'all' 
+                ? allVerifications 
+                : allVerifications.filter(v => v.status === currentFilter);
+
+            if (searchTerm) {
+                filtered = filtered.filter(v => 
+                    v.fullName.toLowerCase().includes(searchTerm) ||
+                    v.whatsappNumber.includes(searchTerm) ||
+                    v.orderNumber.toString().includes(searchTerm)
+                );
+            }
+
+            filteredVerifications = filtered;
+            const tbody = document.getElementById('tableBody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">No verifications found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(v => `
+                <tr class="table-row border-b border-gray-200">
+                    <td class="px-6 py-4 font-semibold text-gray-800">#${v.orderNumber}</td>
+                    <td class="px-6 py-4 text-gray-700">${v.fullName}</td>
+                    <td class="px-6 py-4 text-gray-700">${v.whatsappNumber}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex gap-2">
+                            ${v.files?.dlFront ? `<img src="/uploads/${v.files.dlFront}" alt="DL Front" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('/uploads/${v.files.dlFront}')">` : ''}
+                            ${v.files?.dlBack ? `<img src="/uploads/${v.files.dlBack}" alt="DL Back" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('/uploads/${v.files.dlBack}')">` : ''}
+                            ${v.files?.utilityBill ? `<img src="/uploads/${v.files.utilityBill}" alt="Utility Bill" class="h-10 w-10 object-cover rounded cursor-pointer" onclick="openImageModal('/uploads/${v.files.utilityBill}')">` : ''}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="status-badge status-${v.status}">
+                            ${v.status === 'pending_review' ? '⏳ Pending' : v.status === 'approved' ? '✅ Approved' : '❌ Rejected'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 text-sm">
+                        ${new Date(v.createdAt).toLocaleDateString()}
+                    </td>
+                    <td class="px-6 py-4">
+                        <button onclick="openDetailModal('${v._id}')" class="text-blue-600 hover:text-blue-800 font-semibold">
+                            View Details →
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function openDetailModal(id) {
+            currentDetailId = id;
+            try {
+                const response = await fetch(`/api/admin/verifications/${id}`);
+                const data = await response.json();
+                const v = data.data;
+
+                document.getElementById('detailOrderNumber').textContent = v.orderNumber;
+                document.getElementById('detailFullName').textContent = v.fullName;
+                document.getElementById('detailDOB').textContent = v.dateOfBirth;
+                document.getElementById('detailSSN').textContent = v.ssn;
+                document.getElementById('detailAddress').textContent = v.fullAddress;
+                document.getElementById('detailWhatsapp').textContent = v.whatsappNumber;
+                document.getElementById('detailSubmittedAt').textContent = new Date(v.submittedAt).toLocaleString();
+                document.getElementById('detailStatus').textContent = v.status === 'pending_review' ? '⏳ Pending' : v.status === 'approved' ? '✅ Approved' : '❌ Rejected';
+
+                if (v.files?.dlFront) document.getElementById('detailDLFront').src = `/uploads/${v.files.dlFront}`;
+                if (v.files?.dlBack) document.getElementById('detailDLBack').src = `/uploads/${v.files.dlBack}`;
+                if (v.files?.utilityBill) document.getElementById('detailUtilityBill').src = `/uploads/${v.files.utilityBill}`;
+
+                document.getElementById('detailModal').classList.add('show');
+            } catch (error) {
+                console.error('Error loading details:', error);
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('show');
+            currentDetailId = null;
+        }
+
+        async function updateStatus(status) {
+            if (!currentDetailId) return;
+            
+            try {
+                const response = await fetch(`/api/admin/verifications/${currentDetailId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('statusMessage').textContent = '✅ Status updated successfully!';
+                    document.getElementById('statusMessage').classList.remove('hidden');
+                    document.getElementById('statusMessage').classList.add('bg-green-100', 'text-green-700');
+                    setTimeout(() => {
+                        closeDetailModal();
+                        loadVerifications();
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+            }
+        }
+
+        async function deleteRecord() {
+            if (!currentDetailId) return;
+            
+            if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/verifications/${currentDetailId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('statusMessage').textContent = '✅ Record deleted successfully!';
+                    document.getElementById('statusMessage').classList.remove('hidden');
+                    document.getElementById('statusMessage').classList.add('bg-green-100', 'text-green-700');
+                    setTimeout(() => {
+                        closeDetailModal();
+                        loadVerifications();
+                    }, 1500);
+                } else {
+                    document.getElementById('statusMessage').textContent = '❌ Failed to delete record';
+                    document.getElementById('statusMessage').classList.remove('hidden');
+                    document.getElementById('statusMessage').classList.add('bg-red-100', 'text-red-700');
+                }
+            } catch (error) {
+                console.error('Error deleting record:', error);
+                document.getElementById('statusMessage').textContent = '❌ Error deleting record';
+                document.getElementById('statusMessage').classList.remove('hidden');
+                document.getElementById('statusMessage').classList.add('bg-red-100', 'text-red-700');
+            }
+        }
+
+        function openImageModal(src) {
+            document.getElementById('fullImage').src = src;
+            document.getElementById('imageModal').classList.add('show');
+        }
+
+        function closeImageModal(event) {
+            if (event && event.target.id !== 'imageModal') return;
+            document.getElementById('imageModal').classList.remove('show');
+        }
+
+        // Refresh data every 30 seconds
+        setInterval(loadVerifications, 30000);
+    </script>
+</body>
+</html>

