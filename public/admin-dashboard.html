@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - VerifyPro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/styles.css">
     <style>
         body {
             background-color: #f0f9ff;
@@ -293,7 +293,9 @@
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', async () => {
-            await fetch('/api/admin/logout');
+            await fetch('/api/admin/logout', {
+                credentials: 'include'
+            });
             window.location.href = '/admin/login';
         });
 
@@ -307,7 +309,9 @@
 
         async function loadVerifications() {
             try {
-                const response = await fetch('/api/admin/verifications');
+                const response = await fetch('/api/admin/verifications', {
+                    credentials: 'include'
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -434,6 +438,7 @@
                 const response = await fetch(`/api/admin/verifications/${currentDetailId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ status })
                 });
 
@@ -461,7 +466,8 @@
             
             try {
                 const response = await fetch(`/api/admin/verifications/${currentDetailId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
 
                 const data = await response.json();
