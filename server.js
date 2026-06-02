@@ -104,13 +104,6 @@ app.use(session({
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
@@ -227,13 +220,10 @@ function formatFormDataForEmail(formData) {
 /**
  * Helper: Escape HTML for safety
  */
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 function escapeHtmlServer(text) {
+    if (typeof text !== 'string') {
+        return '';
+    }
     const map = {
         '&': '&amp;',
         '<': '&lt;',
