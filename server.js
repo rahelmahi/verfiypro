@@ -82,6 +82,9 @@ const Verification = mongoose.model('Verification', verificationSchema);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Admin credentials
 const ADMIN_EMAIL = 'ttsuk21418@gmail.com';
 const ADMIN_PASSWORD = '#email123';
