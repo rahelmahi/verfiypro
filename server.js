@@ -8,6 +8,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
+const signature = require('cookie-signature');
 require('dotenv').config();
 
 // Configure Cloudinary
@@ -69,38 +70,71 @@ app.use(express.static(path.join(__dirname, 'public')));
 const ADMIN_EMAIL = 'ttsuk21418@gmail.com';
 const ADMIN_PASSWORD = '#email123';
 
-// Session configuration
+// Session configuration - be smart about secure flag
+// Use secure:true only for production HTTPS, not for localhost
+const isProduction = process.env.NODE_ENV === 'production' && !process.env.LOCAL_DEV;
+
 const sessionConfig = {
+    name: 'connect.sid', // Explicitly set session cookie name
     secret: 'verifypro-admin-secret-key',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
+    rolling: true,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production',
+        secure: isProduction, // Only require HTTPS in production on Vercel
         httpOnly: true,
         sameSite: 'lax',
+        path: '/',
         maxAge: 24 * 60 * 60 * 1000
     }
 };
 
-// Add MongoDB store if connection string is available
+// Add MongoDB store for persistence
 if (process.env.MONGODB_URI) {
-    sessionConfig.store = new MongoStore({
-        mongoUrl: process.env.MONGODB_URI,
-        touchAfter: 24 * 3600
-    });
+    try {
+        const mongoStore = new MongoStore({
+            mongoUrl: process.env.MONGODB_URI,
+            touchAfter: 24 * 3600,
+            autoRemove: 'native',
+            crypto: {
+                secret: process.env.SESSION_SECRET || 'verifypro-admin-secret-key'
+            }
+        });
+        
+        mongoStore.on('error', (err) => {
+            console.error('❌ MongoStore error:', err.message);
+        });
+        
+        mongoStore.on('connected', () => {
+            console.log('✅ MongoStore connected and ready');
+        });
+        
+        sessionConfig.store = mongoStore;
+        console.log('✅ Using MongoDB session store');
+    } catch (err) {
+        console.error('❌ MongoStore initialization error:', err.message);
+        console.log('ℹ️ Using memory store as fallback');
+    }
+} else {
+    console.log('ℹ️ Using memory store for sessions');
 }
 
+// Middleware order matters - Session BEFORE CORS and body parsers
 app.use(session(sessionConfig));
 
-// Middleware
+// CORS with credentials support
 app.use(cors({
     origin: [
         'http://localhost:3000',
         'http://localhost:5000',
         'https://verfiypro.vercel.app'
     ],
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Set-Cookie']
 }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -302,6 +336,11 @@ app.get('/api/verification/:id', async (req, res) => {
 
 // Middleware: Admin auth check
 const requireAdmin = (req, res, next) => {
+    console.log('🔐 Request received');
+    console.log('   Session ID from store:', req.sessionID);
+    console.log('   Cookie from request:', req.headers.cookie);
+    console.log('   Parsed session.isAdmin:', req.session.isAdmin);
+    
     if (req.session.isAdmin) {
         next();
     } else {
@@ -313,11 +352,39 @@ const requireAdmin = (req, res, next) => {
 app.post('/api/admin/login', (req, res) => {
     const { email, password } = req.body;
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        req.session.isAdmin = true;
-        res.json({ success: true, message: 'Login successful' });
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('Session regenerate error:', err);
+                return res.status(500).json({ success: false, message: 'Session error' });
+            }
+            
+            req.session.isAdmin = true;
+            const sessionID = req.sessionID;
+            console.log('✅ Admin login successful - SessionID:', sessionID);
+            
+            // Sign the session ID using the same secret
+            const signedSessionID = 's:' + signature.sign(sessionID, sessionConfig.secret);
+            
+            // Set the session cookie with signed value
+            res.cookie('connect.sid', signedSessionID, {
+                httpOnly: true,
+                path: '/',
+                sameSite: 'lax',
+                maxAge: 24 * 60 * 60 * 1000
+            });
+            
+            res.json({ success: true, message: 'Login successful' });
+        });
     } else {
+        console.warn('❌ Invalid login attempt');
         res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
+});
+
+// Test endpoint to verify cookies work
+app.get('/api/test-cookie', (req, res) => {
+    res.cookie('testcookie', 'testvalue', { httpOnly: true, maxAge: 3600000 });
+    res.json({ message: 'Cookie set' });
 });
 
 // API: Admin logout
