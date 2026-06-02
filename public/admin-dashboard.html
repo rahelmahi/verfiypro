@@ -284,11 +284,34 @@
         let currentDetailId = null;
         let filteredVerifications = [];
 
+        // Check authentication first
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/admin/check', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    // Not authenticated, redirect to login
+                    window.location.href = '/admin/login';
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Auth check error:', error);
+                window.location.href = '/admin/login';
+                return false;
+            }
+        }
+
         // Load verifications on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            loadVerifications();
-            setupFilterButtons();
-            setupSearchInput();
+        document.addEventListener('DOMContentLoaded', async () => {
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                loadVerifications();
+                setupFilterButtons();
+                setupSearchInput();
+            }
         });
 
         // Logout
@@ -312,6 +335,13 @@
                 const response = await fetch('/api/admin/verifications', {
                     credentials: 'include'
                 });
+
+                if (response.status === 401) {
+                    // Session expired, redirect to login
+                    window.location.href = '/admin/login';
+                    return;
+                }
+
                 const data = await response.json();
                 
                 if (data.success) {

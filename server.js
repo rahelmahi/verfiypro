@@ -326,6 +326,15 @@ app.get('/api/admin/logout', (req, res) => {
     res.json({ success: true, message: 'Logged out' });
 });
 
+// API: Check admin session
+app.get('/api/admin/check', (req, res) => {
+    if (req.session.isAdmin) {
+        res.json({ authenticated: true });
+    } else {
+        res.status(401).json({ authenticated: false });
+    }
+});
+
 // API: Get all verifications (admin)
 app.get('/api/admin/verifications', requireAdmin, async (req, res) => {
     try {
