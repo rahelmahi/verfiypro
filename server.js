@@ -468,22 +468,13 @@ app.post('/api/verify', upload.fields([
                             </tr>
                         </table>ss="section-title">📎 Documents Attached</div>
                         <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">The following documents have been uploaded:</p>
-                        <div class="section-title">📞 Contact Information</div>r: #555; font-size: 14px;">
-                        <table>>✓ Driving License - Front</li>
-                            <tr>✓ Driving License - Back</li>
-                                <td>WhatsApp Number</td>Bill</li>
+                        <div class="section-title">📞 Contact Information</div>
+                        <table>
+                            <tr>
+                                <td>WhatsApp Number</td>
                                 <td><strong>${escapeHtmlServer(formData.whatsappNumber)}</strong></td>
                             </tr>
-                        </table>ss="attachments-note">
-                            All documents are attached to this email. Please review them carefully.
-                        <div class="section-title">📎 Documents Attached</div>
-                        <p style="color: #666; margin: 0 0 10px 0; font-size: 14px;">The following documents have been uploaded:</p>
-                        <ul style="margin: 0 0 10px 0; padding-left: 20px; color: #555; font-size: 14px;">
-                            <li>✓ Driving License - Front</li>
-                            <li>✓ Driving License - Back</li>
-                            <li>✓ Electricity / Utility Bill</li>
-                        </ul>   <td>${new Date().toLocaleString()}</td>
-                            </tr>
+                        </table>
                         <div class="attachments-note">
                             All documents are attached to this email. Please review them carefully.
                         </div>  <td><div class="status-badge">⏳ PENDING REVIEW</div></td>
@@ -491,8 +482,8 @@ app.post('/api/verify', upload.fields([
                         <div class="section-title">⏰ Submission Details</div>
                         <table>
                             <tr>ss="footer">
-                                <td>Submitted At</td> 0;">© 2026 VerifyPro. All rights reserved.</p>
-                                <td>${new Date().toLocaleString()}</td>nt Verification Platform</p>
+                                <td>Submitted At</td>  0;">© 2026 VerifyPro. All rights reserved.</p>
+                                <td>${new Date().toLocaleString()}</td>
                             </tr>yle="margin: 0;">This email contains sensitive information. Please handle securely.</p>
                             <tr>
                                 <td>Status</td>
