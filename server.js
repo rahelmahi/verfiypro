@@ -329,6 +329,7 @@ app.get('/api/verification/:id', async (req, res) => {
         if (!verification) {
             return res.status(404).json({ error: 'Verification not found' });
         }
+        console.log('DEBUG: SSN from database:', verification.ssn);
         res.json(verification);
     } catch (error) {
         console.error('Error fetching verification:', error);
@@ -408,6 +409,10 @@ app.get('/api/admin/check', (req, res) => {
 app.get('/api/admin/verifications', requireAdmin, async (req, res) => {
     try {
         const verifications = await Verification.find().sort({ createdAt: -1 });
+        // Log first SSN for debugging
+        if (verifications.length > 0) {
+            console.log('DEBUG: First verification SSN:', verifications[0].ssn, 'Length:', verifications[0].ssn?.length);
+        }
         res.json({ success: true, data: verifications });
     } catch (error) {
         console.error('Error fetching verifications:', error);
@@ -649,6 +654,27 @@ app.get('/', (req, res) => {
 // Health check
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', mongoConnected: mongoConnected });
+});
+
+// DEBUG ROUTE - Check database SSN (remove in production)
+app.get('/debug/verification/:id', async (req, res) => {
+    try {
+        const verification = await Verification.findById(req.params.id);
+        if (!verification) {
+            return res.status(404).json({ error: 'Verification not found' });
+        }
+        const ssnRaw = verification.ssn;
+        const ssnChars = ssnRaw ? ssnRaw.split('').map(c => ({ char: c, code: c.charCodeAt(0) })) : [];
+        res.json({
+            ssn_raw: ssnRaw,
+            ssn_length: ssnRaw ? ssnRaw.length : 0,
+            ssn_chars: ssnChars,
+            orderNumber: verification.orderNumber
+        });
+    } catch (error) {
+        console.error('Error fetching verification:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 // Start server

@@ -722,10 +722,11 @@
                         <label class="form-label">SSN / TAX ID / VAT <span class="required">*</span></label>
                         <div class="input-group">
                             <input 
-                                type="password" 
-                                class="form-input" 
+                                type="text" 
+                                class="form-input ssn-masked" 
                                 id="ssn" 
                                 placeholder="••• •• ••••"
+                                autocomplete="off"
                                 required
                             >
                             <button 
@@ -958,9 +959,10 @@
         // SSN Toggle
         function toggleSSN() {
             const ssnInput = document.getElementById('ssn');
-            const isPassword = ssnInput.type === 'password';
-            ssnInput.type = isPassword ? 'text' : 'password';
-            document.getElementById('ssnToggle').textContent = isPassword ? '🙈' : '👁️';
+            const toggle = document.getElementById('ssnToggle');
+            
+            ssnInput.classList.toggle('ssn-masked');
+            toggle.textContent = ssnInput.classList.contains('ssn-masked') ? '👁️' : '🙈';
         }
 
         // Navigation - Modified for single page display

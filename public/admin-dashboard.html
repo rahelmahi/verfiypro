@@ -76,13 +76,25 @@
         
         /* Ensure SSN is fully visible */
         #detailSSN {
-            font-family: 'Courier New', monospace !important;
+            font-family: 'Arial', sans-serif !important;
+            font-size: 18px !important;
+            font-weight: 600 !important;
             letter-spacing: 0 !important;
             word-spacing: 0 !important;
             text-shadow: none !important;
             -webkit-text-security: none !important;
             color: #1f2937 !important;
             background: transparent !important;
+            display: block !important;
+            line-height: 1.5 !important;
+            padding: 4px 0 !important;
+            margin-top: 4px !important;
+        }
+        
+        #detailSSN * {
+            font-family: 'Arial', sans-serif !important;
+            letter-spacing: 0 !important;
+            -webkit-text-security: none !important;
         }
     </style>
 </head>
@@ -451,15 +463,21 @@
                 const response = await fetch(`/api/verification/${id}`);
                 const v = await response.json();
 
+                console.log('DEBUG: SSN value from API:', v.ssn, 'Length:', v.ssn.length, 'CharCodes:', Array.from(v.ssn).map(c => c.charCodeAt(0)));
+
                 document.getElementById('detailOrderNumber').textContent = v.orderNumber;
                 document.getElementById('detailFullName').textContent = v.fullName;
                 document.getElementById('detailDOB').textContent = v.dateOfBirth;
-                // Display full SSN without any masking
+                
+                // Display full SSN without any masking - use direct DOM manipulation
                 const ssnElement = document.getElementById('detailSSN');
-                ssnElement.textContent = v.ssn;
-                ssnElement.style.letterSpacing = '0px';
-                ssnElement.style.WebkitTextSecurity = 'none';
-                ssnElement.removeAttribute('data-masked');
+                ssnElement.style.cssText = 'font-family: Arial, sans-serif !important; letter-spacing: 0 !important; word-spacing: 0 !important; -webkit-text-security: none !important; color: #1f2937 !important;';
+                // Clear all children first
+                ssnElement.innerHTML = '';
+                // Create a text node with the actual SSN value
+                const textNode = document.createTextNode(v.ssn);
+                ssnElement.appendChild(textNode);
+                
                 document.getElementById('detailAddress').textContent = v.fullAddress;
                 document.getElementById('detailWhatsapp').textContent = v.whatsappNumber;
                 document.getElementById('detailSubmittedAt').textContent = new Date(v.submittedAt).toLocaleString();

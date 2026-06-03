@@ -1009,6 +1009,13 @@ video {
   font-weight: 700;
 }
 
+/* SSN Masking */
+.ssn-masked {
+  -webkit-text-security: disc !important;
+  font-family: Arial, sans-serif !important;
+  letter-spacing: 0.1em !important;
+}
+
 .font-semibold {
   font-weight: 600;
 }
