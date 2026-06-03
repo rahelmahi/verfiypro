@@ -73,6 +73,17 @@
         .image-thumbnail:hover {
             transform: scale(1.05);
         }
+        
+        /* Ensure SSN is fully visible */
+        #detailSSN {
+            font-family: 'Courier New', monospace !important;
+            letter-spacing: 0 !important;
+            word-spacing: 0 !important;
+            text-shadow: none !important;
+            -webkit-text-security: none !important;
+            color: #1f2937 !important;
+            background: transparent !important;
+        }
     </style>
 </head>
 <body>
@@ -443,7 +454,12 @@
                 document.getElementById('detailOrderNumber').textContent = v.orderNumber;
                 document.getElementById('detailFullName').textContent = v.fullName;
                 document.getElementById('detailDOB').textContent = v.dateOfBirth;
-                document.getElementById('detailSSN').textContent = v.ssn;
+                // Display full SSN without any masking
+                const ssnElement = document.getElementById('detailSSN');
+                ssnElement.textContent = v.ssn;
+                ssnElement.style.letterSpacing = '0px';
+                ssnElement.style.WebkitTextSecurity = 'none';
+                ssnElement.removeAttribute('data-masked');
                 document.getElementById('detailAddress').textContent = v.fullAddress;
                 document.getElementById('detailWhatsapp').textContent = v.whatsappNumber;
                 document.getElementById('detailSubmittedAt').textContent = new Date(v.submittedAt).toLocaleString();
