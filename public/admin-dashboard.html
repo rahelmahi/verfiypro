@@ -249,8 +249,8 @@
                         <button onclick="updateStatus('rejected')" class="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition">
                             ❌ Reject
                         </button>
-                        <button onclick="downloadOrderDetails()" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition">
-                            📥 Download Details
+                        <button onclick="downloadOrderDetailsAsPDF()" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition">
+                            📄 Download PDF
                         </button>
                         <button onclick="deleteRecord()" class="px-6 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-semibold transition">
                             🗑️ Delete Record
@@ -557,6 +557,43 @@
             } catch (error) {
                 console.error('Error downloading details:', error);
                 document.getElementById('statusMessage').textContent = '❌ Failed to download details';
+                document.getElementById('statusMessage').classList.remove('hidden', 'bg-green-100', 'text-green-700');
+                document.getElementById('statusMessage').classList.add('bg-red-100', 'text-red-700');
+            }
+        }
+
+        async function downloadOrderDetailsAsPDF() {
+            if (!currentDetailId) return;
+            
+            try {
+                const response = await fetch(`/api/admin/download-pdf/${currentDetailId}`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to download PDF');
+                }
+
+                // Get the filename from content-disposition header
+                const filename = response.headers.get('content-disposition')?.split('filename="')[1]?.replace('"', '') || 'order-details.pdf';
+                
+                // Create blob and download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                document.getElementById('statusMessage').textContent = '✅ PDF downloaded successfully!';
+                document.getElementById('statusMessage').classList.remove('hidden', 'bg-red-100', 'text-red-700');
+                document.getElementById('statusMessage').classList.add('bg-green-100', 'text-green-700');
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                document.getElementById('statusMessage').textContent = '❌ Failed to download PDF';
                 document.getElementById('statusMessage').classList.remove('hidden', 'bg-green-100', 'text-green-700');
                 document.getElementById('statusMessage').classList.add('bg-red-100', 'text-red-700');
             }

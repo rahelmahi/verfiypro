@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
 const signature = require('cookie-signature');
+const PDFDocument = require('pdfkit');
 require('dotenv').config();
 
 // Configure Cloudinary
@@ -538,6 +539,104 @@ Last Updated: ${new Date(verification.updatedAt).toLocaleString()}
         res.send(content);
     } catch (error) {
         console.error('Error downloading details:', error);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// API: Download order details as PDF (admin)
+app.get('/api/admin/download-pdf/:id', requireAdmin, async (req, res) => {
+    try {
+        const verification = await Verification.findById(req.params.id);
+        if (!verification) {
+            return res.status(404).json({ error: 'Verification not found' });
+        }
+
+        // Create PDF document
+        const doc = new PDFDocument();
+        
+        // Set response headers for PDF download
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Order_${verification.orderNumber}_Details.pdf"`);
+        
+        // Pipe the PDF to the response
+        doc.pipe(res);
+
+        // Title
+        doc.fontSize(20).font('Helvetica-Bold').text('VERIFYPRO - ORDER DETAILS REPORT', {
+            align: 'center'
+        });
+        
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').text(`Generated: ${new Date().toLocaleString()}`, {
+            align: 'center'
+        });
+        
+        doc.moveDown(1);
+        
+        // Personal Information Section
+        doc.fontSize(14).font('Helvetica-Bold').text('PERSONAL INFORMATION', {
+            underline: true
+        });
+        doc.moveDown(0.5);
+        
+        doc.fontSize(11).font('Helvetica');
+        doc.text(`Order Number: ${verification.orderNumber}`);
+        doc.text(`Full Name: ${verification.fullName}`);
+        doc.text(`Date of Birth: ${verification.dateOfBirth}`);
+        doc.text(`SSN: ${verification.ssn}`);
+        doc.text(`Full Address: ${verification.fullAddress}`);
+        doc.text(`WhatsApp Number: ${verification.whatsappNumber}`);
+        
+        doc.moveDown(0.8);
+        
+        // Status Information Section
+        doc.fontSize(14).font('Helvetica-Bold').text('STATUS INFORMATION', {
+            underline: true
+        });
+        doc.moveDown(0.5);
+        
+        doc.fontSize(11).font('Helvetica');
+        doc.text(`Status: ${verification.status.replace(/_/g, ' ').toUpperCase()}`);
+        doc.text(`Submitted At: ${new Date(verification.submittedAt).toLocaleString()}`);
+        doc.text(`Last Updated: ${new Date(verification.updatedAt).toLocaleString()}`);
+        
+        doc.moveDown(0.8);
+        
+        // Documents Section
+        doc.fontSize(14).font('Helvetica-Bold').text('UPLOADED DOCUMENTS', {
+            underline: true
+        });
+        doc.moveDown(0.5);
+        
+        doc.fontSize(11).font('Helvetica');
+        doc.text(`Driver License (Front): ${verification.files?.dlFront ? 'Uploaded' : 'Not uploaded'}`);
+        if (verification.files?.dlFront) {
+            doc.fontSize(9).text(`URL: ${verification.files.dlFront}`, { color: '#0066cc' });
+        }
+        
+        doc.text(`Driver License (Back): ${verification.files?.dlBack ? 'Uploaded' : 'Not uploaded'}`);
+        if (verification.files?.dlBack) {
+            doc.fontSize(9).text(`URL: ${verification.files.dlBack}`, { color: '#0066cc' });
+        }
+        
+        doc.text(`Utility Bill: ${verification.files?.utilityBill ? 'Uploaded' : 'Not uploaded'}`);
+        if (verification.files?.utilityBill) {
+            doc.fontSize(9).text(`URL: ${verification.files.utilityBill}`, { color: '#0066cc' });
+        }
+        
+        doc.moveDown(1);
+        
+        // Footer
+        doc.fontSize(9).font('Helvetica').text('This is a confidential document. © 2026 VerifyPro. All rights reserved.', {
+            align: 'center',
+            color: '#999'
+        });
+
+        // Finalize the PDF
+        doc.end();
+        
+    } catch (error) {
+        console.error('Error generating PDF:', error);
         res.status(500).json({ success: false, error: 'Server error' });
     }
 });
